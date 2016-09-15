@@ -14,9 +14,10 @@ var snakes = [];
 for(var i=0; i < 20; i++) {
   snakes.push(new Snake({
     x: Math.random() * 760,
-    y: Math.random() * 20 + 100
+    y: Math.random() * 40 + 100
   }));
 }
+snakes.sort(function(s1,s2){return s1.y - s2.y;});
 
 /**
  * @function masterLoop
@@ -51,11 +52,15 @@ function update(elapsedTime) {
   * the number of milliseconds passed since the last frame.
   * @param {CanvasRenderingContext2D} ctx the context to render to
   */
+
+  //bucket id = x / 2(int)  leftSide
+  //bucket id =(x+w) / 2 (int) rightside
+
 function render(elapsedTime, ctx) {
   ctx.fillStyle = "lightblue";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  player.render(elapsedTime, ctx);
   snakes.forEach(function(snake){snake.render(elapsedTime, ctx);});
+  player.render(elapsedTime, ctx);
 }
 
 },{"./game.js":2,"./player.js":3,"./snake.js":4}],2:[function(require,module,exports){
