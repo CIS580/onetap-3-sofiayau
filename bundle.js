@@ -2,13 +2,15 @@
 "use strict";
 
 /* Classes */
-const Game = require('./game.js');
-const Player = require('./player.js');
-const Snake = require('./snake.js');
+const Game = require('./game');
+const EntityManager = require('./entity-manager');
+const Player = require('./player');
+const Snake = require('./snake');
 
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
+game.entities = new EntityManager(128);
 var player = new Player({x: 382, y: 440});
 var snakes = [];
 for(var i=0; i < 20; i++) {
@@ -16,6 +18,7 @@ for(var i=0; i < 20; i++) {
     x: Math.random() * 760,
     y: Math.random() * 40 + 100
   }));
+  entities.add(snakes[i]);
 }
 snakes.sort(function(s1,s2){return s1.y - s2.y;});
 
@@ -42,6 +45,10 @@ masterLoop(performance.now());
 function update(elapsedTime) {
   player.update(elapsedTime);
   snakes.forEach(function(snake) { snake.update(elapsedTime);});
+  entities.collide(function(entity1,entity2){
+    entity1.color = 'red';
+    entity2.color = 'red';
+  });
   // TODO: Update the game objects
 }
 
@@ -63,7 +70,90 @@ function render(elapsedTime, ctx) {
   player.render(elapsedTime, ctx);
 }
 
-},{"./game.js":2,"./player.js":3,"./snake.js":4}],2:[function(require,module,exports){
+},{"./entity-manager":2,"./game":3,"./player":4,"./snake":5}],2:[function(require,module,exports){
+module.exports = exports = EntityManager;
+
+function EntityManager(width, height, cellSize){
+  this.worldWidth = width;
+  this.worldHeight = height;
+  this.cellSize = cellSize;
+  this.widthInCells = Math.ceil(width / cellSize);
+  this.numberOfCells = this.widthInCells * Math.ceil(height / cellSize);
+  this.cells = [];
+  for(var i =0; i < this.numberOfCells; i++){
+    this.cells[i] = [];
+  }
+}
+
+EntityManager.prototype.addEntity = function(entity){
+  var x = Math.floor(entity.x / this.cellSize);
+  var y = Math.ceil((entity.x+ entity.width)/this.cellSize);
+  var index = y * this.widthInCells + x;
+  this.cells[index].push(entity);
+    entity._cell = index;
+  }
+
+
+  /*var top = Math.floor(entity.y / this.cellSize);
+  var bottom = Math.ceil((entity.y+ entity.height)/this.cellSize);
+  for(var x = left; x < right; x++){
+    for(var y = top;y < bottom; y++){
+      this.cells[y * this.widthInCells + x].push(entity);
+      if(!entity.cells) entity.cells = [];
+      entity.cells.push({x: x, y:y});
+    }
+  }*/
+
+EntityManager.prototype.updateEntity = function(entity){
+  var x = Math.floor(entity.x / this.cellSize);
+  var y = Math.ceil((entity.x+ entity.width)/this.cellSize);
+  var index = y * this.widthInCells + x;
+  if(index != entity._cell){
+    var cellIndex = this.cells[entity._cell].indexOf(entity);
+    if(cellIndex != -1)this.cells[entity._cell].splice(cellIndex,1);
+    this.cell[index].push(entity);
+    entity._cell = index;
+  }
+}
+
+//remove entity
+EntityManager.prototype.collide = function(callback){
+  var self = this;
+  this.cells.forEach(function(cell,i) {
+    cell.forEach(function(entity1){
+      cell.forEach(function(entity2){
+        if(entity1 != entity2) checkForCollision(entity1,entity2,callback);
+      });
+      if(i % (self.widthInCells - 1) != 1){
+        self.cells[i+1].forEach(function(entity2){
+          checkForCollision(entity1,entity2, callback);
+        });
+      }
+      if(i < self.numberOfCells - self.widthInCells){
+        self.cellls[i + self.widthInCells].forEach(function(entity2){
+          checkForCollision(entity1,entity2,callback);
+        });
+      }
+      //check for collisions diagionally below and right
+      if(i < self.numberOfCells - self.widthInCells || i % (self.widthInCells - 1)!= 0){
+        self.cells[i + self.widthInCells +1].forEach(function(entity2){
+          checkForCollision(entity1,entity2,callback);
+        });
+      }
+    });
+  });
+}
+function checkForCollision(entity1,entity2,callback){
+  var collides = !(entity1.x +entity1.width < entity2.x ||
+                  entity1.x < entity2.x +entity2.width ||
+                  entity1.y +entity1.height < entity2.y ||
+                  entity2.y < entity2.height +entity2.y);
+  if(collides){
+    callback(entity1,entity2);
+  }
+}
+
+},{}],3:[function(require,module,exports){
 "use strict";
 
 /**
@@ -121,7 +211,7 @@ Game.prototype.loop = function(newTime) {
   this.frontCtx.drawImage(this.backBuffer, 0, 0);
 }
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 "use strict";
 
 /**
@@ -187,7 +277,7 @@ Player.prototype.render = function(time, ctx) {
   );
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 
 /**
@@ -210,6 +300,7 @@ function Snake(position) {
   this.height = 16;
   this.leftBound = position.x - 20;
   this.rightBound = position.x + 20;
+  this.color ;
 }
 
 /** Declare spritesheet at the class level */
@@ -238,6 +329,7 @@ Snake.prototype.update = function(elapsedTime) {
       if(this.x > this.rightBound) this.state = "left";
       break;
   }
+  this.color = '#00000000';
 }
 
 /**
@@ -265,6 +357,8 @@ Snake.prototype.render = function(time, ctx) {
       this.x, this.y, 2*this.width, 2*this.height
     );
   }
+  ctx.strokeStyle = this.color;
+  ctx.strokeRect(this.x, this.y, this.width, this.height);
 }
 
 },{}]},{},[1]);
