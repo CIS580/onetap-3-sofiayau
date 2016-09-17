@@ -20,6 +20,7 @@ function Snake(position) {
   this.height = 16;
   this.leftBound = position.x - 20;
   this.rightBound = position.x + 20;
+  this.color ;
 }
 
 /** Declare spritesheet at the class level */
@@ -48,6 +49,7 @@ Snake.prototype.update = function(elapsedTime) {
       if(this.x > this.rightBound) this.state = "left";
       break;
   }
+  this.color = '#00000000';
 }
 
 /**
@@ -75,4 +77,6 @@ Snake.prototype.render = function(time, ctx) {
       this.x, this.y, 2*this.width, 2*this.height
     );
   }
+  ctx.strokeStyle = this.color;
+  ctx.strokeRect(this.x, this.y, this.width, this.height);
 }
